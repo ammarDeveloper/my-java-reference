@@ -1,6 +1,6 @@
 import java.util.*; 
 
-class TestClass {
+class RotatingArray {
     public static void main(String args[] ) throws Exception {
 
         Scanner input = new Scanner(System.in); // creating a scanner for the inputs
