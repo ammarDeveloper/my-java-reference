@@ -22,9 +22,9 @@ public class Inputs {
         Scanner input = new Scanner(System.in);
 
         System.out.println("Enter the numbers: ");
-        int[] arr = new int[5];
+        String[] arr = new String[5];
         for (int i = 0; i<5; i++){
-            arr[i] = input.nextInt();
+            arr[i] = input.nextLine();
         }
 
         String arrString = Arrays.toString(arr);
