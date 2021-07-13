@@ -17,6 +17,7 @@ class RotatingArray {
                 int temp = input.nextInt();
                 arr[j] = temp;
             }
+            System.out.println(arr);
 
             // calling the rotating function for rotateSteps time
             for (int j = 0; j<rotatesteps; j++){
@@ -24,10 +25,10 @@ class RotatingArray {
             }
 
             printArr(arr); // calling a function which prints the array without any brakates
-            input.close(); // make sure to close the scannner input
             
         }
-
+        
+        input.close(); // make sure to close the scannner input
     }
 
     // method which prints an array with out any bracket or comma
