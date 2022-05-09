@@ -1,0 +1,528 @@
+BILLCONTOLLER.JAVA
+
+
+package com.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+
+import com.model.Order;
+import com.service.BillService;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.validation.Valid;
+
+@Controller
+public class BillController {
+	@Autowired
+	private BillService billService;
+	@RequestMapping(value="/showPage" ,method=RequestMethod.GET)
+	public String showPage(@ModelAttribute("order") Order order) {
+		return"showpage";
+	}
+	@RequestMapping(value="/billDesk" ,method=RequestMethod.POST)
+	public String calculateTotalCost(@Valid@ModelAttribute("order") Order order, 
+			BindingResult result,ModelMap model) {
+		if(result.hasErrors()) {
+			return "showpage";
+		}
+		double totalCost=billService.calculateTotalCost(order);
+		model.addAttribute("totalCost",totalCost);
+		return "billdesk";
+	}
+	
+	@ModelAttribute("brandList")
+	public List<String> populateBrandName(){
+		List<String> l=new ArrayList<>();
+		l.add("LG");
+		l.add("MI");
+		l.add("Samsung");
+		l.add("Sony");
+		l.add("Micromax");
+		return l;
+		
+	}
+	@ModelAttribute("displayList")
+	public List<String> populateDisplayType(){
+		List<String> l1=new ArrayList<>();
+		l1.add("QLED");
+		l1.add("OLED");
+		l1.add("LED");
+		l1.add("LCD");
+		l1.add("Plasma");
+		return l1;
+		
+	}
+
+}
+----------------------
+INTERNATIONALIZATIONCONFIG.JAVA
+
+package com.controller;
+
+import java.util.Locale;
+
+import org.springframework.context.MessageSource;
+import org.springframework.context.annotation.Bean;
+
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.support.ReloadableResourceBundleMessageSource;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
+import org.springframework.web.servlet.LocaleResolver;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
+import org.springframework.web.servlet.i18n.SessionLocaleResolver;
+
+@Configuration
+public class InternationalizationConfig extends WebMvcConfigurerAdapter {
+
+//Create a SessionLocaleResolver object and set the default locale to English  return the SessionLocaleResolver object  
+	@Bean
+   public LocaleResolver localeResolver() {
+		SessionLocaleResolver resolver = new SessionLocaleResolver();
+		resolver.setDefaultLocale(Locale.ENGLISH);
+		return resolver;
+   }
+   
+   //Create LocaleChangeInterceptor object and set the parameter name as language and return the localeChangeInterceptor
+   @Bean
+   public LocaleChangeInterceptor localeChangeInterceptor() {
+	   
+	   LocaleChangeInterceptor interceptor = new LocaleChangeInterceptor();
+		interceptor.setParamName("language");
+		return interceptor;
+   }
+   @Bean
+   public MessageSource messageSource() {
+      ReloadableResourceBundleMessageSource messageSource = new ReloadableResourceBundleMessageSource();
+      messageSource.setBasename("classpath:messages");
+      messageSource.setDefaultEncoding("UTF-8");
+      return messageSource;
+   }
+   @Bean
+   public LocalValidatorFactoryBean validator(MessageSource messageSource) {
+      LocalValidatorFactoryBean bean = new LocalValidatorFactoryBean();
+      bean.setValidationMessageSource(messageSource);
+      return bean;
+}
+   
+   
+   //register the LocaleChangeInterceptor
+   @Override
+   public void addInterceptors(InterceptorRegistry registry) {
+	  
+	   registry.addInterceptor(localeChangeInterceptor());
+   }
+}
+------------------------
+RETAILSHOPAPPLICATION.JAVA
+
+package com.example.demo;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.ComponentScan;
+
+@SpringBootApplication
+@ComponentScan({"com.controller","com.model","com.service"})
+public class RetailShopApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(RetailShopApplication.class, args);
+	}
+
+}
+----------------------
+ORDER.JAVA
+
+package com.model;
+
+import org.springframework.stereotype.Component;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotEmpty;
+
+//pojo class with required attributes,getters and setters
+@Component
+public class Order {
+	@NotEmpty(message="{error.customerName.blank}")
+	private String customerName;
+	@NotEmpty(message="{error.contactNumber.blank}")
+	private String contactNumber;
+	@Min(value=0, message="{error.couponCode.positive}")
+	private int couponCode;
+	private String displayType;
+	private String brandName;
+	
+	public String getCustomerName() {
+		return customerName;
+	}
+	public void setCustomerName(String customerName) {
+		this.customerName = customerName;
+	}
+	public String getContactNumber() {
+		return contactNumber;
+	}
+	public void setContactNumber(String contactNumber) {
+		this.contactNumber = contactNumber;
+	}
+	public int getCouponCode() {
+		return couponCode;
+	}
+	public void setCouponCode(int couponCode) {
+		this.couponCode = couponCode;
+	}
+	
+	public String getDisplayType() {
+		return displayType;
+	}
+	public void setDisplayType(String displayType) {
+		this.displayType = displayType;
+	}
+	public String getBrandName() {
+		return brandName;
+	}
+	public void setBrandName(String brandName) {
+		this.brandName = brandName;
+	}
+	
+	
+
+}
+--------------------------
+BILLSERVICE.JAVA
+
+package com.service;
+
+import org.springframework.stereotype.Service;
+
+import com.model.Order;
+
+@Service
+public class BillService {
+	
+	//calculate the totalCost and return the cost
+	public double calculateTotalCost(Order order) {
+		double cost=0.0;
+	if(order.getDisplayType().equalsIgnoreCase("QLED")) {
+		if(order.getBrandName().equalsIgnoreCase("LG")) {
+			cost=13000+13000*0.12;
+		}
+		else if(order.getBrandName().equalsIgnoreCase("Micromax")) {
+			cost=9000+9000*0.12;
+		}
+		else if(order.getBrandName().equalsIgnoreCase("Samsung")) {
+			cost=15000+15000*0.12;
+		}
+		else if(order.getBrandName().equalsIgnoreCase("MI")) {
+			cost=10000+10000*0.12;
+		}
+		else if(order.getBrandName().equalsIgnoreCase("Sony")) {
+			cost=16000+16000*0.12;
+		}
+	}
+	
+	if(order.getDisplayType().equalsIgnoreCase("OLED")) {
+		if(order.getBrandName().equalsIgnoreCase("LG")) {
+			cost=15000+15000*0.12;
+		}
+		else if(order.getBrandName().equalsIgnoreCase("Micromax")) {
+			cost=11000+11000*0.12;
+		}
+		else if(order.getBrandName().equalsIgnoreCase("Samsung")) {
+			cost=17000+17000*0.12;
+		}
+		else if(order.getBrandName().equalsIgnoreCase("MI")) {
+			cost=12000+12000*0.12;
+		}
+		else if(order.getBrandName().equalsIgnoreCase("Sony")) {
+			cost=18000+18000*0.12;
+		}
+	}
+	if(order.getDisplayType().equalsIgnoreCase("LED")) {
+		if(order.getBrandName().equalsIgnoreCase("LG")) {
+			cost=17000+17000*0.12;
+		}
+		else if(order.getBrandName().equalsIgnoreCase("Micromax")) {
+			cost=13000+13000*0.12;
+		}
+		else if(order.getBrandName().equalsIgnoreCase("Samsung")) {
+			cost=19000+19000*0.12;
+		}
+		else if(order.getBrandName().equalsIgnoreCase("MI")) {
+			cost=14000+14000*0.12;
+		}
+		else if(order.getBrandName().equalsIgnoreCase("Sony")) {
+			cost=20000+20000*0.12;
+		}
+	}
+	if(order.getDisplayType().equalsIgnoreCase("LCD")) {
+		if(order.getBrandName().equalsIgnoreCase("LG")) {
+			cost=19000+19000*0.12;
+		}
+		else if(order.getBrandName().equalsIgnoreCase("Micromax")) {
+			cost=15000+15000*0.12;
+		}
+		else if(order.getBrandName().equalsIgnoreCase("Samsung")) {
+			cost=21000+21000*0.12;
+		}
+		else if(order.getBrandName().equalsIgnoreCase("MI")) {
+			cost=16000+16000*0.12;
+		}
+		else if(order.getBrandName().equalsIgnoreCase("Sony")) {
+			cost=22000+22000*0.12;
+		}
+	}
+	if(order.getDisplayType().equalsIgnoreCase("Plasma")) {
+		if(order.getBrandName().equalsIgnoreCase("LG")) {
+			cost=21000+21000*0.12;
+		}
+		else if(order.getBrandName().equalsIgnoreCase("Micromax")) {
+			cost=17000+17000*0.12;
+		}
+		else if(order.getBrandName().equalsIgnoreCase("Samsung")) {
+			cost=23000+23000*0.12;
+		}
+		else if(order.getBrandName().equalsIgnoreCase("MI")) {
+			cost=18000+18000*0.12;
+		}
+		else if(order.getBrandName().equalsIgnoreCase("Sony")) {
+			cost=24000+24000*0.12;
+		}
+	}
+		return cost;
+	}
+
+}
+------------------------------
+APPLICATION.PROPERTIES
+
+#Do not change the configurations
+#value for server.port can be changed
+#include other needed configurations
+server.port=8087
+spring.mvc.view.prefix = /WEB-INF/views/
+spring.mvc.view.suffix = .jsp
+spring.mvc.static-path-pattern=/resources/**
+-------------------
+MESSAGE.PROPERTIES
+
+label.customerName=Customer Name in English
+label.contactNumber=Contact Number in English
+label.couponCode=Coupon Code in English
+label.brandName=Television Brand Name in English
+label.displayType=Television Display Type in English
+
+error.customerName.blank=Customer Name cannot be blank in English
+error.contactNumber.blank=Contact Number cannot be blank in English
+error.couponCode.positive=Coupon Code can only be positive numbers in English
+
+-------------------------
+Message_de.properties
+
+label.customerName=Customer Name in German
+label.contactNumber=Contact Number in German
+label.couponCode=Coupon Code in German
+label.brandName=Television Brand Name in German
+label.displayType=Television Display Type in German
+
+error.customerName.blank=Customer Name cannot be blank in German
+error.contactNumber.blank=Contact Number cannot be blank in German
+error.couponCode.positive=Coupon Code can only be positive numbers in German
+
+----------------------
+Message_fr.properties
+
+label.customerName=Customer Name in French
+label.contactNumber=Contact Number in French
+label.couponCode=Coupon Code in French
+label.brandName=Television Brand Name in French
+label.displayType=Television Display Type in French
+
+error.customerName.blank=Customer Name cannot be blank in French
+error.contactNumber.blank=Contact Number cannot be blank in French
+error.couponCode.positive=Coupon Code can only be positive numbers in French
+
+-------------------
+
+BILLDESK.jsp
+
+<%@page isELIgnored="false" %>
+<html>
+<body bgcolor="lavender">
+
+<h2>“Hi ${order.getCustomerName()} , The Total cost for ${order.getBrandName()} ${order.getDisplayType()} Television is Rs.${totalCost}”.    </h2>
+
+
+</body>
+</html>
+---------------------
+SHOWPAGE.JSP
+
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
+<%@ taglib prefix="sf" uri="http://www.springframework.org/tags/form" %>
+<%@ taglib uri="http://www.springframework.org/tags/form" prefix="form"%>
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1" isELIgnored="false"%>
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<body style="background-color:lavender">
+<h1><center> Welcome to Retail Shop </center></h1>
+<!--  Do not change the below line -->
+<a href="/showPage?language=en">English</a>|<a href="/showPage?language=de">German</a>|<a href="/showPage?language=fr">French</a></align>
+<!--  Design the page as per the requirements-->
+ <form:form method="post" action="/billDesk" modelAttribute="order"  >
+  <table align="center">
+  <tr>
+ <td><spring:message code="label.customerName"/></td>
+  <td><form:input path="customerName" id="customerName"/></td>
+  <td><form:errors path="customerName"/></td>
+  </tr>
+  <tr>
+  <td><spring:message code="label.contactNumber"/></td>
+  <td><form:input path="contactNumber" id="contactNumber"/></td>
+  <td><form:errors path="contactNumber"/></td>
+  </tr>
+  <tr>
+  <td><spring:message code="label.couponCode"/></td>
+  <td><form:input path="couponCode"  id="couponCode"/></td>
+  <td><form:errors path="couponCode" id="couponCode"/></td>
+  </tr>
+  <tr>
+  <td><spring:message code="label.brandName"/></td>
+  <td><form:select path="brandName" items="${brandList}" id="brandName"/></td>
+  
+  </tr>
+  <tr>
+  <td><spring:message code="label.displayType"/></td>
+  <td><form:select path="displayType" items="${displayList}" id="displayType"/></td>  
+  <tr>
+ <td> <input type="submit" value="PlaceOrder"  id="submit" name="submit"></td>
+  <td><input type="reset" value="Cancel"/></td>
+  </tr>
+  </table>
+  
+  
+  </form:form>
+
+</body>
+</html>
+-------------------------
+RentailShopApplicationTests.java
+
+//package com.example.demo;
+//
+//import org.junit.jupiter.api.Test;
+//import org.springframework.boot.test.context.SpringBootTest;
+//
+//@SpringBootTest
+//class RetailShopApplicationTests {
+//
+//	@Test
+//	void contextLoads() {
+//	}
+//
+//}
+
+------------------------
+POM.XML
+
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>2.1.8.RELEASE</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+	<groupId>com</groupId>
+	<artifactId>RetailShop</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>RetailShop</name>
+	<description>Demo project for Spring Boot</description>
+
+	<properties>
+		<java.version>1.8</java.version>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter</artifactId>
+		</dependency>
+
+
+	<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+
+		 <dependency>
+     <groupId>org.apache.tomcat.embed</groupId>
+     <artifactId>tomcat-embed-jasper</artifactId>
+     <scope>provided</scope>
+   </dependency>
+   <dependency>
+  <groupId>javax.servlet</groupId>
+  <artifactId>servlet-api</artifactId>
+  <version>2.5</version>
+  <scope>provided</scope>
+</dependency>
+<dependency>
+  <groupId>javax.servlet.jsp</groupId>
+  <artifactId>jsp-api</artifactId>
+  <version>2.1</version>
+  <scope>provided</scope>
+</dependency>
+
+<dependency>
+  <groupId>taglibs</groupId>
+  <artifactId>standard</artifactId>
+  <version>1.1.2</version>
+</dependency>
+<dependency>
+  <groupId>javax.servlet</groupId>
+  <artifactId>jstl</artifactId>
+  <version>1.2</version>
+</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>org.junit.vintage</groupId>
+					<artifactId>junit-vintage-engine</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>
+------------------------------
+
+
+
+
+
